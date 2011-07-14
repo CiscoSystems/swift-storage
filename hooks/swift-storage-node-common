@@ -1,0 +1,73 @@
+#!/bin/bash
+set -ue
+
+DEFAULT_ETH=$(ip route  | grep default | awk '{ print $5 }')
+IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f2)
+
+# TODO: Need to use different addresses for internal swift traffic
+# as this the only security measure in place is network isolation
+STORAGE_LOCAL_NET_IP=$IP
+
+PACKAGES="swift swift-account swift-container swift-object xfsprogs"
+
+function set_swift_hash {
+  # TODO: Do this with augeas and put in a utility function for use elsewhere
+  cat >/etc/swift/swift.conf <<EOF
+[swift-hash]
+# random unique string that can never change (DO NOT LOSE)
+swift_hash_path_suffix = $1
+EOF
+}
+
+function configure_rsyncd {
+cat >/etc/rsyncd.conf <<EOF
+uid = swift
+gid = swift
+log file = /var/log/rsyncd.log
+pid file = /var/run/rsyncd.pid
+address = $STORAGE_LOCAL_NET_IP
+
+[account]
+max connections = 2
+path = /srv/node/
+read only = false
+lock file = /var/lock/account.lock
+
+[container]
+max connections = 2
+path = /srv/node/
+read only = false
+lock file = /var/lock/container.lock
+
+[object]
+max connections = 2
+path = /srv/node/
+read only = false
+lock file = /var/lock/object.lock
+EOF
+perl -pi -e 's/RSYNC_ENABLE=false/RSYNC_ENABLE=true/' /etc/default/rsync
+service rsync start
+}
+
+function create_server_conf {
+# $1 should be: account, container or object
+case $1 in
+  "account") subconf="replicator auditor reaper" ;;
+  "object"|"container") subconf="replicator updater auditor" ;;
+esac
+cat >/etc/swift/$1-server.conf <<EOF
+[DEFAULT]
+bind_ip = $STORAGE_LOCAL_NET_IP
+workers = 2
+
+[pipeline:main]
+pipeline = $1-server
+
+[app:$1-server]
+use = egg:swift#$1
+
+EOF
+for i in $subconf ; do
+  echo -e "[$1-$i]\n" >>/etc/swift/$1-server.conf
+done
+}

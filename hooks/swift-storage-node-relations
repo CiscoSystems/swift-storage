@@ -1,0 +1,43 @@
+#!/bin/bash
+set -ue
+FORMULA_DIR=$(dirname $0)
+ARG0=${0##*/}
+
+echo $ENSEMBLE_UNIT_NAME >>/tmp/unit_name
+
+if [[ -e $FORMULA_DIR/swift-storage-node-common ]] ; then
+  . $FORMULA_DIR/swift-storage-node-common
+else
+  echo "ERROR: Could not load swift-storage-node-common from $FORMULA_DIR"
+fi
+
+function install_hook {
+  apt-get -y install python-software-properties || exit 1
+  add-apt-repository ppa:swift-core/milestone-proposed || exit 1
+  apt-get update
+  for i in $PACKAGES ; do
+    DEBIAN_FRONTEND=noninteractive apt-get -y install $i
+  done
+  [[ ! -d /etc/swift ]] && mkdir /etc/swift
+  configure_rsyncd
+  for i in account container object ; do create_server_conf $i ; done
+  set_swift_hash "TESTINGHASH"
+}
+
+function proxy_joined {
+  relation-set zone=1
+  relation-set ip=$IP
+  relation-set device=xvde2 
+}
+
+function proxy_changed {
+  URL=`relation-get update_url`
+  [[ -z $URL ]] && exit 0
+}
+
+case $ARG0 in
+  "install") install_hook ;;
+  "start"|"stop") exit 0 ;;
+  "swift-proxy-relation-joined") proxy_joined ;;
+  "swift-proxy-relation-changed") proxy_changed ;;
+esac

@@ -1,0 +1,12 @@
+ensemble: formula
+name: swift-storage
+revision: 7 
+summary: "Swift storage node"
+description: |
+  Contains swift-object, swift-container and swift-account servers.
+provides:
+  swift-storage:
+    interface: swift
+requires:
+  swift-proxy:
+    interface: swift
