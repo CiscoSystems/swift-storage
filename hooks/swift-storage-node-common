@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ue
+set -u
 
 DEFAULT_ETH=$(ip route  | grep default | awk '{ print $5 }')
 IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f2)
@@ -9,6 +9,8 @@ IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f
 STORAGE_LOCAL_NET_IP=$IP
 
 PACKAGES="swift swift-account swift-container swift-object xfsprogs"
+
+DEVICE=xvda2
 
 function set_swift_hash {
   # TODO: Do this with augeas and put in a utility function for use elsewhere
@@ -70,4 +72,18 @@ EOF
 for i in $subconf ; do
   echo -e "[$1-$i]\n" >>/etc/swift/$1-server.conf
 done
+}
+
+function setup_storage {
+  # TODO: remove previous lines from fstab
+  mkdir -p /srv/node
+  cat /proc/mounts | grep $DEVICE >/dev/null
+  if [[ $? == 0 ]] ; then
+    umount $(cat /proc/mounts |  grep $DEVICE | awk '{ print $2 }')
+  fi
+  mkfs.xfs -f -i size=1024 /dev/$DEVICE
+  echo "/dev/$DEVICE /srv/node/$DEVICE xfs noatime,nodiratime,nobarrier,logbufs=8 0 0" >> /etc/fstab
+  mkdir -p /srv/node/$DEVICE
+  mount /srv/node/$DEVICE
+  chown -R swift:swift /srv/node
 }

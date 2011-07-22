@@ -1,6 +1,6 @@
 ensemble: formula
 name: swift-storage
-revision: 7 
+revision: 19
 summary: "Swift storage node"
 description: |
   Contains swift-object, swift-container and swift-account servers.
@@ -9,4 +9,7 @@ provides:
     interface: swift
 requires:
   swift-proxy:
+    interface: swift
+peers:
+  swift-ring:
     interface: swift

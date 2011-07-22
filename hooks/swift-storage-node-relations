@@ -1,5 +1,6 @@
 #!/bin/bash
-set -ue
+# test
+set -u
 FORMULA_DIR=$(dirname $0)
 ARG0=${0##*/}
 
@@ -19,20 +20,29 @@ function install_hook {
     DEBIAN_FRONTEND=noninteractive apt-get -y install $i
   done
   [[ ! -d /etc/swift ]] && mkdir /etc/swift
+  chown swift:swift /etc/swift
   configure_rsyncd
+  setup_storage
   for i in account container object ; do create_server_conf $i ; done
   set_swift_hash "TESTINGHASH"
 }
 
 function proxy_joined {
-  relation-set zone=1
-  relation-set ip=$IP
-  relation-set device=xvde2 
+  relation-set zone=1 hostname=$(hostname -f) device=$DEVICE
 }
 
 function proxy_changed {
   URL=`relation-get update_url`
   [[ -z $URL ]] && exit 0
+  echo "$URL" >>/tmp/url
+  rm -rf /etc/swift/*.gz
+  for i in account object container ; do
+    cd /etc/swift
+    echo "Fetching $URL/$i.ring.gz"
+    wget $URL/$i.ring.gz
+  done
+  chown swift -R /etc/swift
+  swift-init all start
 }
 
 case $ARG0 in
