@@ -1,6 +1,6 @@
 ensemble: formula
 name: swift-storage
-revision: 19
+revision: 24
 summary: "Swift storage node"
 description: |
   Contains swift-object, swift-container and swift-account servers.

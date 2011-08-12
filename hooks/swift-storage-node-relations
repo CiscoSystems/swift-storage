@@ -14,7 +14,7 @@ fi
 
 function install_hook {
   apt-get -y install python-software-properties || exit 1
-  add-apt-repository ppa:swift-core/milestone-proposed || exit 1
+  add_ppa
   apt-get update
   for i in $PACKAGES ; do
     DEBIAN_FRONTEND=noninteractive apt-get -y install $i
@@ -24,7 +24,6 @@ function install_hook {
   configure_rsyncd
   setup_storage
   for i in account container object ; do create_server_conf $i ; done
-  set_swift_hash "TESTINGHASH"
 }
 
 function proxy_joined {
@@ -33,7 +32,8 @@ function proxy_joined {
 
 function proxy_changed {
   URL=`relation-get update_url`
-  [[ -z $URL ]] && exit 0
+  SWIFT_HASH=`relation-get swift_hash`
+  [[ -z $URL ]] || [[ -z $SWIFT_HASH ]] && exit 0
   echo "$URL" >>/tmp/url
   rm -rf /etc/swift/*.gz
   for i in account object container ; do
@@ -41,6 +41,7 @@ function proxy_changed {
     echo "Fetching $URL/$i.ring.gz"
     wget $URL/$i.ring.gz
   done
+  set_swift_hash $SWIFT_HASH
   chown swift -R /etc/swift
   swift-init all start
 }

@@ -10,7 +10,8 @@ STORAGE_LOCAL_NET_IP=$IP
 
 PACKAGES="swift swift-account swift-container swift-object xfsprogs"
 
-DEVICE=xvda2
+DEVICE=$(config-get block-device)
+PPA=$(config-get swift-release)
 
 function set_swift_hash {
   # TODO: Do this with augeas and put in a utility function for use elsewhere
@@ -86,4 +87,13 @@ function setup_storage {
   mkdir -p /srv/node/$DEVICE
   mount /srv/node/$DEVICE
   chown -R swift:swift /srv/node
+}
+
+function add_ppa {
+  [[ $PPA == "distro" ]] && exit 0
+  . /etc/lsb-release
+  [[ -z $PPA ]] && return 0
+  [[ $PPA == "milestone" ]] && PPA="release"
+  PPA_URL="deb http://ppa.launchpad.net/swift-core/$PPA/ubuntu $DISTRIB_CODENAME main"
+  add-apt-repository "$PPA_URL" || exit 1
 }
