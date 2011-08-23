@@ -1,0 +1,3 @@
+swift-storage:
+  swift-release: trunk
+  block-device: xvda2
