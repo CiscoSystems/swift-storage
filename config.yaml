@@ -1,9 +1,9 @@
 options:
   swift-release:
     default: distro
-    type: str
+    type: string
     description: Swift PPA to configure (trunk, milestone, distro)
   block-device:
     default: sdb
-    type: str
+    type: string
     description: Block device to format, mount and use for storing swift objects (WARNING!)
