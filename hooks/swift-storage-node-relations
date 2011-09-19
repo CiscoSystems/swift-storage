@@ -4,7 +4,7 @@ set -u
 FORMULA_DIR=$(dirname $0)
 ARG0=${0##*/}
 
-echo $ENSEMBLE_UNIT_NAME >>/tmp/unit_name
+echo $JUJU_UNIT_NAME >>/tmp/unit_name
 
 if [[ -e $FORMULA_DIR/swift-storage-node-common ]] ; then
   . $FORMULA_DIR/swift-storage-node-common
