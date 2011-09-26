@@ -90,7 +90,7 @@ function setup_storage {
 }
 
 function add_ppa {
-  [[ $PPA == "distro" ]] && exit 0
+  [[ $PPA == "distro" ]] && return 0
   . /etc/lsb-release
   [[ -z $PPA ]] && return 0
   [[ $PPA == "milestone" ]] && PPA="release"
