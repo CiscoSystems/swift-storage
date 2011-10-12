@@ -27,7 +27,7 @@ function install_hook {
 }
 
 function proxy_joined {
-  relation-set zone=1 hostname=$(hostname -f) device=$DEVICE
+  relation-set zone=1 hostname=$(unit-get private-address) device=$DEVICE
 }
 
 function proxy_changed {
