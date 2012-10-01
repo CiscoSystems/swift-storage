@@ -10,8 +10,13 @@ STORAGE_LOCAL_NET_IP=$IP
 
 PACKAGES="swift swift-account swift-container swift-object xfsprogs"
 
-DEVICE=$(config-get block-device)
+DEVICES=$(config-get block-device)
 PPA=$(config-get swift-release)
+
+if [ "$DEVICES" = "guess" ]; then
+  # This should be more smart
+  DEVICES=$(awk '($4 ~ /^(sd[a-z]|cciss\/c[0-9]d[0-9])$/) && ($4 != "sda") && ($4 != "cciss/c0d0") {print $4}' </proc/partitions)
+fi
 
 function set_swift_hash {
   # TODO: Do this with augeas and put in a utility function for use elsewhere
@@ -78,14 +83,19 @@ done
 function setup_storage {
   # TODO: remove previous lines from fstab
   mkdir -p /srv/node
-  cat /proc/mounts | grep $DEVICE >/dev/null
-  if [[ $? == 0 ]] ; then
-    umount $(cat /proc/mounts |  grep $DEVICE | awk '{ print $2 }')
-  fi
-  mkfs.xfs -f -i size=1024 /dev/$DEVICE
-  echo "/dev/$DEVICE /srv/node/$DEVICE xfs noatime,nodiratime,nobarrier,logbufs=8 0 0" >> /etc/fstab
-  mkdir -p /srv/node/$DEVICE
-  mount /srv/node/$DEVICE
+
+  for DEVICE in $DEVICES; do
+    SRVNODENAME="$(echo $DEVICE | sed 's/[\/:]/-/g')"
+
+    if grep $DEVICE </proc/mounts >/dev/null; then
+      umount $(cat /proc/mounts |  grep $DEVICE | awk '{ print $2 }')
+    fi
+    mkfs.xfs -f -i size=1024 /dev/$DEVICE
+    echo "/dev/$DEVICE /srv/node/$SRVNODENAME xfs noatime,nodiratime,nobarrier,logbufs=8 0 0" >> /etc/fstab
+    mkdir -p /srv/node/$SRVNODENAME
+    mount /srv/node/$SRVNODENAME
+  done
+
   chown -R swift:swift /srv/node
 }
 

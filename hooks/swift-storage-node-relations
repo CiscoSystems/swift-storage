@@ -27,7 +27,16 @@ function install_hook {
 }
 
 function proxy_joined {
-  relation-set zone=1 hostname=$(unit-get private-address) device=$DEVICE
+  RELDEVICES=""
+  for DEVICE in $DEVICES; do
+    SRVNODENAME="$(echo $DEVICE | sed 's/[\/:]/-/g')"
+    if [ -n "$RELDEVICES" ]; then
+      RELDEVICES="$RELDEVICES:$SRVNODENAME"
+    else
+      RELDEVICES="$SRVNODENAME"
+    fi
+  done
+  relation-set zone=1 hostname=$(unit-get private-address) device=$RELDEVICES
 }
 
 function proxy_changed {
