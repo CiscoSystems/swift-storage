@@ -61,7 +61,7 @@ function create_server_conf {
 # $1 should be: account, container or object
 case $1 in
   "account") subconf="replicator auditor reaper" ;;
-  "object"|"container") subconf="replicator updater auditor" ;;
+  "object"|"container") subconf="replicator updater auditor sync" ;;
 esac
 cat >/etc/swift/$1-server.conf <<EOF
 [DEFAULT]
