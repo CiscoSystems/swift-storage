@@ -101,9 +101,12 @@ function setup_storage {
 
 function add_ppa {
   [[ $PPA == "distro" ]] && return 0
-  . /etc/lsb-release
-  [[ -z $PPA ]] && return 0
-  [[ $PPA == "milestone" ]] && PPA="release"
-  PPA_URL="deb http://ppa.launchpad.net/swift-core/$PPA/ubuntu $DISTRIB_CODENAME main"
+  if [ "${PPA:0:4}" = "deb " ]; then
+    PPA_URL="$PPA"
+  else
+    . /etc/lsb-release
+    [[ $PPA == "milestone" ]] && PPA="release"
+    PPA_URL="deb http://ppa.launchpad.net/swift-core/$PPA/ubuntu $DISTRIB_CODENAME main"
+  fi
   add-apt-repository "$PPA_URL" || exit 1
 }
