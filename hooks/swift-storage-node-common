@@ -8,7 +8,7 @@ IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f
 # as this the only security measure in place is network isolation
 STORAGE_LOCAL_NET_IP=$IP
 
-PACKAGES="swift swift-account swift-container swift-object xfsprogs"
+PACKAGES="swift swift-account swift-container swift-object xfsprogs python-swiftclient"
 
 DEVICES=$(config-get block-device)
 PPA=$(config-get swift-release)
