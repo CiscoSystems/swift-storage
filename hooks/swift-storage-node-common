@@ -15,7 +15,7 @@ PPA=$(config-get swift-release)
 
 if [ "$DEVICES" = "guess" ]; then
   # This should be more smart
-  DEVICES=$(awk '($4 ~ /^(sd[a-z]|cciss\/c[0-9]d[0-9])$/) && ($4 != "sda") && ($4 != "cciss/c0d0") {print $4}' </proc/partitions)
+  DEVICES=$(awk '($4 ~ /^(sd[a-z]|vd[a-z]|cciss\/c[0-9]d[0-9])$/) && ($4 != "sda") && ($4 != "vda") && ($4 != "cciss/c0d0") {print $4}' </proc/partitions)
 fi
 
 function set_swift_hash {
