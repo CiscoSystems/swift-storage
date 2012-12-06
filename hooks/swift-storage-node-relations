@@ -5,10 +5,10 @@ set -u
 CHARM_DIR=$(dirname $0)
 ARG0=${0##*/}
 
-if [[ -e $FORMULA_DIR/swift-storage-node-common ]] ; then
-  . $FORMULA_DIR/swift-storage-node-common
+if [[ -e $CHARM_DIR/swift-storage-node-common ]] ; then
+  . $CHARM_DIR/swift-storage-node-common
 else
-  echo "ERROR: Could not load swift-storage-node-common from $FORMULA_DIR"
+  echo "ERROR: Could not load swift-storage-node-common from $CHARM_DIR"
 fi
 
 function install_hook {
