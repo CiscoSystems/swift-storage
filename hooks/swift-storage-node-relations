@@ -14,7 +14,7 @@ fi
 function install_hook {
   apt-get -y --force-yes install python-software-properties || exit 1
 
-  configure_install_source "$(config-get openstack-origin)"
+  configure_install_source "$OPENSTACK_ORIGIN"
   apt-get update
 
   DEBIAN_FRONTEND=noninteractive apt-get -y \

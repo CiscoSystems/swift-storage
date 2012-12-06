@@ -16,7 +16,16 @@ IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f
 # as this the only security measure in place is network isolation
 STORAGE_LOCAL_NET_IP=$IP
 
-PACKAGES="swift swift-account swift-container swift-object xfsprogs python-swiftclient"
+PACKAGES="swift swift-account swift-container swift-object xfsprogs"
+
+OPENSTACK_ORIGIN="$(config-get openstack-origin)"
+
+src=$(get_os_codename_install_source "$OPENSTACK_ORIGIN")
+# Install python-swiftclient for Folsom and beyond.
+if dpkg --compare-versions $(get_os_version_codename "$src") gt \
+                           $(get_os_version_codename "essex") ; then
+  PACKAGES="$PACKAGES python-swiftclient"
+fi
 
 DEVICES=$(config-get block-device)
 
