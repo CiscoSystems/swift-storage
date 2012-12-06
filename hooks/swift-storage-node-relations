@@ -1,10 +1,9 @@
 #!/bin/bash
 # test
 set -u
-FORMULA_DIR=$(dirname $0)
-ARG0=${0##*/}
 
-echo $JUJU_UNIT_NAME >>/tmp/unit_name
+CHARM_DIR=$(dirname $0)
+ARG0=${0##*/}
 
 if [[ -e $FORMULA_DIR/swift-storage-node-common ]] ; then
   . $FORMULA_DIR/swift-storage-node-common
@@ -14,11 +13,13 @@ fi
 
 function install_hook {
   apt-get -y --force-yes install python-software-properties || exit 1
-  add_ppa
+
+  configure_install_source "$(config-get openstack-origin)"
   apt-get update
-  for i in $PACKAGES ; do
-    DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install $i
-  done
+
+  DEBIAN_FRONTEND=noninteractive apt-get -y \
+    install --no-install-recommends $PACKAGES || exit 1
+
   [[ ! -d /etc/swift ]] && mkdir /etc/swift
   chown swift:swift /etc/swift
   configure_rsyncd

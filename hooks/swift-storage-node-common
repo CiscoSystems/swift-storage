@@ -1,6 +1,14 @@
 #!/bin/bash
 set -u
 
+CHARM="swift-storage"
+
+if [[ -e "$CHARM_DIR/lib/openstack-common" ]] ; then
+  . $CHARM_DIR/lib/openstack-common
+else
+  juju-log "ERROR: Couldn't load $CHARM_DIR/lib/openstack-common." && exit 1
+fi
+
 DEFAULT_ETH=$(ip route  | grep default | awk '{ print $5 }')
 IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f2)
 
@@ -11,7 +19,6 @@ STORAGE_LOCAL_NET_IP=$IP
 PACKAGES="swift swift-account swift-container swift-object xfsprogs python-swiftclient"
 
 DEVICES=$(config-get block-device)
-PPA=$(config-get swift-release)
 
 if [ "$DEVICES" = "guess" ]; then
   # This should be more smart
@@ -97,16 +104,4 @@ function setup_storage {
   done
 
   chown -R swift:swift /srv/node
-}
-
-function add_ppa {
-  [[ $PPA == "distro" ]] && return 0
-  if [ "${PPA:0:4}" = "deb " ]; then
-    PPA_URL="$PPA"
-  else
-    . /etc/lsb-release
-    [[ $PPA == "milestone" ]] && PPA="release"
-    PPA_URL="deb http://ppa.launchpad.net/swift-core/$PPA/ubuntu $DISTRIB_CODENAME main"
-  fi
-  add-apt-repository "$PPA_URL" || exit 1
 }
