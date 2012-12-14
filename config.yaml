@@ -17,4 +17,30 @@ options:
   block-device:
     default: sdb
     type: string
-    description: Block device to format, mount and use for storing swift objects (WARNING!)
+    description: |
+      Device to be used to back Swift storage.  May be any valid block
+      device or a path and size to a local file (/path/to/file.img|$sizeG),
+      which will be created and used as a loopback device (for testing only).
+  overwrite:
+    default: "false"
+    type: string
+    description: |
+      If true, charm will attempt to unmount and overwrite existing and in-use
+      block-devices (WARNING).
+  zone:
+    default: 1
+    type: int
+    description: Swift storage zone
+  object-server-port:
+    default: 6000
+    type: int
+    description: Listening port of the swift-object-server.
+  container-server-port:
+    default: 6001
+    type: int
+    description: Listening port of the swift-container-server.
+  account-server-port:
+    default: 6002
+    type: int
+    description: Listening port of the swift-account-server.
+ 

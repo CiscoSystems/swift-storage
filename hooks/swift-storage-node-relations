@@ -1,6 +1,6 @@
 #!/bin/bash
 # test
-set -u
+set -eu
 
 CHARM_DIR=$(dirname $0)
 ARG0=${0##*/}
@@ -23,37 +23,46 @@ function install_hook {
   [[ ! -d /etc/swift ]] && mkdir /etc/swift
   chown swift:swift /etc/swift
   configure_rsyncd
+  swift-init all stop || true
   setup_storage
-  for i in account container object ; do create_server_conf $i ; done
+  for i in account container object ; do
+    port=$(config-get ${i}-server-port)
+    create_server_conf $i "$port"
+  done
 }
 
 function proxy_joined {
-  RELDEVICES=""
-  for DEVICE in $DEVICES; do
-    SRVNODENAME="$(echo $DEVICE | sed 's/[\/:]/-/g')"
-    if [ -n "$RELDEVICES" ]; then
-      RELDEVICES="$RELDEVICES:$SRVNODENAME"
+  local devs=$(determine_block_devs)
+  local reldevices=""
+  for dev in $devs ; do
+    local srvnodename=$(basename $dev)
+    if [[ -n "$reldevices" ]] ; then
+      reldevices="$reldevices:$srvnodename"
     else
-      RELDEVICES="$SRVNODENAME"
+      reldevices="$srvnodename"
     fi
   done
-  relation-set zone=1 hostname=$(unit-get private-address) device=$RELDEVICES
+  relation-set zone="$(config-get zone)" \
+               device="$reldevices" \
+               object_port="$(config-get object-server-port)" \
+               container_port="$(config-get container-server-port)" \
+               account_port="$(config-get account-server-port)"
 }
 
 function proxy_changed {
-  URL=`relation-get update_url`
-  SWIFT_HASH=`relation-get swift_hash`
-  [[ -z $URL ]] || [[ -z $SWIFT_HASH ]] && exit 0
-  echo "$URL" >>/tmp/url
-  rm -rf /etc/swift/*.gz
+  local www_dir=`relation-get www_dir`
+  local swift_hash=`relation-get swift_hash`
+  [[ -z $www_dir ]] || [[ -z $swift_hash ]] && exit 0
+
+  set_swift_hash $swift_hash
+  local url="http://$(relation-get private-address)/$www_dir"
   for i in account object container ; do
-    cd /etc/swift
-    echo "Fetching $URL/$i.ring.gz"
-    wget $URL/$i.ring.gz
+    echo "Fetching $www_dir/$i.ring.gz"
+    wget "$url/$i.ring.gz" -O /etc/swift/$i.ring.gz
   done
-  set_swift_hash $SWIFT_HASH
+  set_swift_hash $swift_hash
   chown swift -R /etc/swift
-  swift-init all start
+  swift-init all start || true
 }
 
 case $ARG0 in
