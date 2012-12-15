@@ -1,4 +1,3 @@
-ensemble: formula
 name: swift-storage
 maintainer: Adam Gandelman <adamg@canonical.com>
 summary: "Swift storage node"

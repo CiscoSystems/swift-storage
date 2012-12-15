@@ -30,7 +30,10 @@ options:
   zone:
     default: 1
     type: int
-    description: Swift storage zone
+    description: |
+      Swift storage zone to request membership.  Relevant only when the
+      swift-proxy charm has been configured for manual zone assignment
+      (the default).  This should be changed for every service unit.
   object-server-port:
     default: 6000
     type: int
@@ -43,4 +46,4 @@ options:
     default: 6002
     type: int
     description: Listening port of the swift-account-server.
- 
+
