@@ -6,9 +6,3 @@ description: |
 provides:
   swift-storage:
     interface: swift
-requires:
-  swift-proxy:
-    interface: swift
-peers:
-  swift-ring:
-    interface: swift

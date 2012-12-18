@@ -31,7 +31,7 @@ function install_hook {
   done
 }
 
-function proxy_joined {
+function storage_joined {
   local devs=$(determine_block_devs)
   local reldevices=""
   for dev in $devs ; do
@@ -49,7 +49,7 @@ function proxy_joined {
                account_port="$(config-get account-server-port)"
 }
 
-function proxy_changed {
+function storage_changed {
   local www_dir=`relation-get www_dir`
   local swift_hash=`relation-get swift_hash`
   [[ -z $www_dir ]] || [[ -z $swift_hash ]] && exit 0
@@ -68,6 +68,6 @@ function proxy_changed {
 case $ARG0 in
   "install") install_hook ;;
   "start"|"stop") exit 0 ;;
-  "swift-proxy-relation-joined") proxy_joined ;;
-  "swift-proxy-relation-changed") proxy_changed ;;
+  "swift-storage-relation-joined") storage_joined ;;
+  "swift-storage-relation-changed") storage_changed ;;
 esac
