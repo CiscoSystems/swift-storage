@@ -26,30 +26,31 @@ The deployment workflow for swift using this charm is covered in the README
 for the swift-proxy charm at cs:precise/swift-proxy.  The following are
 deployment options to take into consideration when deploying swift-storage.
 
-a. Zone assignment
+**Zone assignment**
 
 If the swift-proxy charm is configured for manual zone assignment (recommended),
 the 'zone' option should be set for each swift-storage service being deployed.
 See the swift-proxy README for more information about zone assignment.
 
-b. Storage
+**Storage**
 
 Swift storage nodes require access to local storage and filesystem.  The charm
 takes a 'block-device' config setting that can be used to specify which storage
 device(s) to use.  Options include:
 
- - a local block device (eg, sdb or /dev/sdb).  It's important that this device
-   be the same on all machine units assinged to this service.
+ - 1 or more local block devices (eg, sdb or /dev/sdb).  It's important that this
+   device be the same on all machine units assigned to this service.  Multiple
+   block devices should be listed as a space-separated list of device nodes.
  - a path to a local file on the filesystem with the size appended after a pipe,
-   eg /etc/swift/storage_dev1.img|5G.   This will be created if it does not
+   eg "/etc/swift/storagedev1.img|5G".  This will be created if it does not
    exist and be mapped to a loopback device. Good for development and testing.
  - "guess" can be used to tell the charm to do its best to find a local devices
    to use. *EXPERIMENTAL*
 
 Multiple devices can be specified. In all cases, the resulting block device(s)
-will be formatted as XFS file system and mounted at /srv/node/$devname.
+will each be formatted as XFS file system and mounted at /srv/node/$devname.
 
-c. Installation repository.
+**Installation repository**
 
 The 'openstack-origin' setting allows Swift to be installed from installation
 repositories and can be used to setup access to the Ubuntu Cloud Archive
