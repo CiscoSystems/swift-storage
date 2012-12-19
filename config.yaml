@@ -21,6 +21,9 @@ options:
       Device to be used to back Swift storage.  May be any valid block
       device or a path and size to a local file (/path/to/file.img|$sizeG),
       which will be created and used as a loopback device (for testing only).
+      Multiple devices may be specified as a space-separated list of devices.
+      If set to "guess", the charm will attempt to format and mount all extra
+      block devices (this is currently experimental and potentially dangerous).
   overwrite:
     default: "false"
     type: string
