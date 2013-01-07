@@ -1,5 +1,13 @@
 #!/bin/bash
-set -u
+set -ue
+
+CHARM="swift-storage"
+
+if [[ -e "$CHARM_DIR/lib/openstack-common" ]] ; then
+  . $CHARM_DIR/lib/openstack-common
+else
+  juju-log "ERROR: Couldn't load $CHARM_DIR/lib/openstack-common." && exit 1
+fi
 
 DEFAULT_ETH=$(ip route  | grep default | awk '{ print $5 }')
 IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f2)
@@ -8,14 +16,15 @@ IP=$(ifconfig  $DEFAULT_ETH | grep 'inet addr' | awk '{ print $2 }' | cut -d: -f
 # as this the only security measure in place is network isolation
 STORAGE_LOCAL_NET_IP=$IP
 
-PACKAGES="swift swift-account swift-container swift-object xfsprogs python-swiftclient"
+PACKAGES="swift swift-account swift-container swift-object xfsprogs gdisk"
 
-DEVICES=$(config-get block-device)
-PPA=$(config-get swift-release)
+OPENSTACK_ORIGIN="$(config-get openstack-origin)"
 
-if [ "$DEVICES" = "guess" ]; then
-  # This should be more smart
-  DEVICES=$(awk '($4 ~ /^(sd[a-z]|vd[a-z]|cciss\/c[0-9]d[0-9])$/) && ($4 != "sda") && ($4 != "vda") && ($4 != "cciss/c0d0") {print $4}' </proc/partitions)
+src=$(get_os_codename_install_source "$OPENSTACK_ORIGIN")
+# Install python-swiftclient for Folsom and beyond.
+if dpkg --compare-versions $(get_os_version_codename "$src") gt \
+                           $(get_os_version_codename "essex") ; then
+  PACKAGES="$PACKAGES python-swiftclient"
 fi
 
 function set_swift_hash {
@@ -63,9 +72,11 @@ case $1 in
   "account") subconf="replicator auditor reaper" ;;
   "object"|"container") subconf="replicator updater auditor sync" ;;
 esac
+local port="$2"
 cat >/etc/swift/$1-server.conf <<EOF
 [DEFAULT]
 bind_ip = $STORAGE_LOCAL_NET_IP
+bind_port = $port
 workers = 2
 
 [pipeline:main]
@@ -80,33 +91,37 @@ for i in $subconf ; do
 done
 }
 
-function setup_storage {
-  # TODO: remove previous lines from fstab
-  mkdir -p /srv/node
+function determine_block_devs {
+  juju-log "determine_block_devs: $@"
+  local devices=$(config-get block-device)
+  if [ "$devices" = "guess" ]; then
+    # This should be more smart
+    devices=$(awk '($4 ~ /^(sd[a-z]|vd[a-z]|cciss\/c[0-9]d[0-9])$/) && ($4 != "sda") && ($4 != "vda") && ($4 != "cciss/c0d0") {print $4}' </proc/partitions)
+  fi
 
-  for DEVICE in $DEVICES; do
-    SRVNODENAME="$(echo $DEVICE | sed 's/[\/:]/-/g')"
-
-    if grep $DEVICE </proc/mounts >/dev/null; then
-      umount $(cat /proc/mounts |  grep $DEVICE | awk '{ print $2 }')
-    fi
-    mkfs.xfs -f -i size=1024 /dev/$DEVICE
-    echo "/dev/$DEVICE /srv/node/$SRVNODENAME xfs noatime,nodiratime,nobarrier,logbufs=8 0 0" >> /etc/fstab
-    mkdir -p /srv/node/$SRVNODENAME
-    mount /srv/node/$SRVNODENAME
+  for dev in $devices ; do
+    echo $(get_block_device "$dev")
   done
-
-  chown -R swift:swift /srv/node
 }
 
-function add_ppa {
-  [[ $PPA == "distro" ]] && return 0
-  if [ "${PPA:0:4}" = "deb " ]; then
-    PPA_URL="$PPA"
-  else
-    . /etc/lsb-release
-    [[ $PPA == "milestone" ]] && PPA="release"
-    PPA_URL="deb http://ppa.launchpad.net/swift-core/$PPA/ubuntu $DISTRIB_CODENAME main"
-  fi
-  add-apt-repository "$PPA_URL" || exit 1
+function setup_storage {
+  mkdir -p /srv/node
+  local devs=$(determine_block_devs)
+  local overwrite="$(config-get overwrite)"
+  local nodename=""
+  juju-log "Preparing storage: $devs"
+
+  for dev in $devs ; do
+    [[ "$overwrite" == "true" ]] || [[ "$overwrite" == "True" ]] &&
+      clean_storage $dev
+    mkfs.xfs -f -i size=1024 $dev
+    nodename=$(basename $dev)
+    if ! echo "$nodename" | grep "loop" ; then
+      fstab_entry="$dev /srv/node/$nodename xfs noatime,nodiratime,nobarrier,logbufs=8 0 0"
+      grep -q "^$fstab_entry" /etc/fstab || echo "$fstab_entry" >>/etc/fstab 
+    fi
+    mkdir -p /srv/node/$nodename
+    mount $dev /srv/node/$nodename
+  done
+  chown -R swift:swift /srv/node
 }

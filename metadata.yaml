@@ -1,4 +1,3 @@
-ensemble: formula
 name: swift-storage
 maintainer: Adam Gandelman <adamg@canonical.com>
 summary: "Swift storage node"
@@ -6,10 +5,4 @@ description: |
   Contains swift-object, swift-container and swift-account servers.
 provides:
   swift-storage:
-    interface: swift
-requires:
-  swift-proxy:
-    interface: swift
-peers:
-  swift-ring:
     interface: swift
