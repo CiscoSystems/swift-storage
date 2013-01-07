@@ -68,17 +68,16 @@ function configure_install_source {
     juju-log "$CHARM: Configuring installation from custom src URL ($src)"
     if echo "$src" | grep -q "|" ; then
       # gpg key id tagged to end of url folloed by a |
-      url=$(echo $src | cut -d'|' -f1) key=$(echo $src | cut -d'|' -f2)
-      if [[ -n "$key" ]] ; then
-        juju-log "$CHARM: Importing repository key: $key"
-        apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$key" || \
-          juju-log "$CHARM WARN: Could not import key from keyserver: $key"
-      else
-        juju-log "$CHARM No repository key specified"
-        url="$src"
-      fi
-      echo $url > /etc/apt/sources.list.d/juju_deb.list
+      url=$(echo $src | cut -d'|' -f1)
+      key=$(echo $src | cut -d'|' -f2)
+      juju-log "$CHARM: Importing repository key: $key"
+      apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$key" || \
+        juju-log "$CHARM WARN: Could not import key from keyserver: $key"
+    else
+      juju-log "$CHARM No repository key specified."
+      url="$src"
     fi
+    echo "$url" > /etc/apt/sources.list.d/juju_deb.list
     return 0
   fi
 
@@ -93,12 +92,14 @@ function configure_install_source {
       error_out "Cannot install from Cloud Archive pocket $src " \
                 "on this Ubuntu version ($DISTRIB_CODENAME)!"
 
-    if [[ "$ca_rel" == "folsom/staging" ]] ; then
-      # cloud archive staging is just a regular PPA.
-      add-apt-repository -y ppa:ubuntu-cloud-archive/folsom-staging
+    # CA staging repos are standard PPAs.
+    if echo $ca_rel | grep -q "staging" ; then
+      ca_rel=$(echo $ca_rel | sed -e 's,/,-,g')
+      add-apt-repository -y ppa:ubuntu-cloud-archive/$ca_rel
       return 0
     fi
 
+    # the others are LP-external deb repos.
     case "$ca_rel" in
       "folsom"|"folsom/updates") pocket="precise-updates/folsom" ;;
       "folsom/proposed") pocket="precise-proposed/folsom" ;;
@@ -141,8 +142,8 @@ get_os_codename_install_source() {
       case "$ca_rel" in
         "folsom"|"folsom/updates"|"folsom/proposed"|"folsom/staging")
           codename="folsom" ;;
-        "grizzly"|"grizzly/updates"|"grizzly/proposed"|"grizzy/staging")
-          codename="grizly" ;;
+        "grizzly"|"grizzly/updates"|"grizzly/proposed"|"grizzly/staging")
+          codename="grizzly" ;;
       esac
     fi
   fi
@@ -160,7 +161,7 @@ get_os_codename_install_source() {
 }
 
 get_os_codename_package() {
-  local pkg_vers=$(dpkg -l | grep "$1" | awk '{ print $3 }')
+  local pkg_vers=$(dpkg -l | grep "$1" | awk '{ print $3 }') || echo "none"
   case "${pkg_vers:0:6}" in
     "2011.2") echo "diablo" ;;
     "2012.1") echo "essex" ;;
@@ -176,6 +177,28 @@ get_os_version_codename() {
     "folsom") echo "2012.2" ;;
     "grizzly") echo "2012.3" ;;
   esac
+}
+
+get_ip() {
+  dpkg -l | grep -q python-dnspython || {
+    apt-get -y install python-dnspython 2>&1 > /dev/null
+  }
+  hostname=$1
+  python -c "
+import dns.resolver
+import socket
+try:
+  # Test to see if already an IPv4 address
+  socket.inet_aton('$hostname')
+  print '$hostname'
+except socket.error:
+  try:
+    answers = dns.resolver.query('$hostname', 'A')
+    if answers:
+      print answers[0].address
+  except dns.resolver.NXDOMAIN:
+    pass
+"
 }
 
 # Common storage routines used by cinder, nova-volume and swift-storage.
