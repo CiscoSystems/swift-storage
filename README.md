@@ -2,10 +2,10 @@ Overview
 --------
 
 This charm provides the swift-storage component of the OpenStack Swift object
-storage system.  It can be deployed as part of its own stand-alone storage
+storage system.  It can be deployed as part of its own standalone storage
 cluster or it can be integrated with the other OpenStack components, assuming
 those are also managed by Juju.  For Swift to function, you'll also need to
-deploy an additional swift-proxy using the cs:precise/swift-storage charm.
+deploy an additional swift-proxy using the cs:precise/swift-proxy charm.
 
 For more information about Swift and its architecture, visit the official
 project website at http://swift.openstack.org.

@@ -80,7 +80,11 @@ bind_port = $port
 workers = 2
 
 [pipeline:main]
-pipeline = $1-server
+pipeline = recon $1-server
+
+[filter:recon]
+use = egg:swift#recon
+recon_cache_path = /var/cache/swift
 
 [app:$1-server]
 use = egg:swift#$1

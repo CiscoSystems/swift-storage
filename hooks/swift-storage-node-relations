@@ -21,7 +21,9 @@ function install_hook {
     install --no-install-recommends $PACKAGES || exit 1
 
   [[ ! -d /etc/swift ]] && mkdir /etc/swift
+  [[ ! -d /var/cache/swift ]] && mkdir /var/cache/swift
   chown swift:swift /etc/swift
+  chown -R swift:swift /var/cache/swift
   configure_rsyncd
   swift-init all stop || true
   setup_storage
