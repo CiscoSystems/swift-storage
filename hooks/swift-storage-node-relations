@@ -27,10 +27,20 @@ function install_hook {
   configure_rsyncd
   swift-init all stop || true
   setup_storage
+  declare -a env_vars=()
   for i in account container object ; do
     port=$(config-get ${i}-server-port)
     create_server_conf $i "$port"
+    # append to env_vars
+    env_vars+=("OPENSTACK_PORT_${i^^}=$port")
+    env_vars+=("OPENSTACK_SWIFT_SERVICE_${i^^}=${i}-server")
+
+    # Ensure we have at least one device mounted as reported by swift-recon
+    env_vars+=("OPENSTACK_URL_${i^^}=\"http://$(relation-get private-address):$port/recon/diskusage\"|\"mounted\": \"true\"")
   done
+
+  # Save our scriptrc env variables for health checks
+  save_script_rc ${env_vars[@]}
 }
 
 function storage_joined {
