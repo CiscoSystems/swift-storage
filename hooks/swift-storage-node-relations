@@ -36,7 +36,7 @@ function install_hook {
     env_vars+=("OPENSTACK_SWIFT_SERVICE_${i^^}=${i}-server")
 
     # Ensure we have at least one device mounted as reported by swift-recon
-    env_vars+=("OPENSTACK_URL_${i^^}=\"http://$(relation-get private-address):$port/recon/diskusage\"|\"mounted\": \"true\"")
+    env_vars+=("OPENSTACK_URL_${i^^}=\"http://$(relation-get private-address):$port/recon/diskusage\"|\"mounted\":+\"true\"")
   done
 
   # Save our scriptrc env variables for health checks
