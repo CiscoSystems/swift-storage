@@ -11,6 +11,26 @@ else
   echo "ERROR: Could not load swift-storage-node-common from $CHARM_DIR"
 fi
 
+function config_changed {
+  
+  declare -a env_vars=()
+  for i in account container object ; do
+    port=$(config-get ${i}-server-port)
+    local url="http://$STORAGE_LOCAL_NET_IP:$port/recon/diskusage"
+    # append to env_vars
+    env_vars+=("OPENSTACK_PORT_${i^^}=$port")
+    env_vars+=("OPENSTACK_SWIFT_SERVICE_${i^^}=${i}-server")
+
+    # Ensure we have at least one device mounted as reported by swift-recon
+    env_vars+=('OPENSTACK_URL_'${i^^}'="'$url'|\"mounted\":+\"true\""')
+
+    create_server_conf $i "$port"
+  done
+
+  # Save our scriptrc env variables for health checks
+  save_script_rc ${env_vars[@]}
+} 
+
 function install_hook {
   apt-get -y --force-yes install python-software-properties || exit 1
 
@@ -27,10 +47,7 @@ function install_hook {
   configure_rsyncd
   swift-init all stop || true
   setup_storage
-  for i in account container object ; do
-    port=$(config-get ${i}-server-port)
-    create_server_conf $i "$port"
-  done
+  config_changed
 }
 
 function storage_joined {
@@ -70,6 +87,7 @@ function storage_changed {
 case $ARG0 in
   "install") install_hook ;;
   "start"|"stop") exit 0 ;;
+  "config-changed") config_changed ;;
   "swift-storage-relation-joined") storage_joined ;;
   "swift-storage-relation-changed") storage_changed ;;
 esac
