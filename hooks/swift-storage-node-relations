@@ -22,7 +22,7 @@ function config_changed {
     env_vars+=("OPENSTACK_SWIFT_SERVICE_${i^^}=${i}-server")
 
     # Ensure we have at least one device mounted as reported by swift-recon
-    env_vars+=('OPENSTACK_URL_'${i^^}'="'$url'|\"mounted\":+\"true\""')
+    env_vars+=('OPENSTACK_URL_'${i^^}'="'$url'|\"mounted\":+true"')
 
     create_server_conf $i "$port"
   done
