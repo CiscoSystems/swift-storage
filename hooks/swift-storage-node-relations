@@ -69,15 +69,14 @@ function storage_joined {
 }
 
 function storage_changed {
-  local www_dir=`relation-get www_dir`
+  local rings_url=`relation-get rings_url`
   local swift_hash=`relation-get swift_hash`
-  [[ -z $www_dir ]] || [[ -z $swift_hash ]] && exit 0
+  [[ -z $rings_url ]] || [[ -z $swift_hash ]] && exit 0
 
   set_swift_hash $swift_hash
-  local url="http://$(relation-get private-address)/$www_dir"
   for i in account object container ; do
-    echo "Fetching $www_dir/$i.ring.gz"
-    wget "$url/$i.ring.gz" -O /etc/swift/$i.ring.gz
+    echo "Fetching $rings_url/$i.ring.gz"
+    wget "$rings_url/$i.ring.gz" -O /etc/swift/$i.ring.gz
   done
   set_swift_hash $swift_hash
   chown swift -R /etc/swift
