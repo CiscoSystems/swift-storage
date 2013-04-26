@@ -2,13 +2,13 @@
 # test
 set -eu
 
-CHARM_DIR=$(dirname $0)
+HOOKS_DIR="$CHARM_DIR/hooks"
 ARG0=${0##*/}
 
-if [[ -e $CHARM_DIR/swift-storage-node-common ]] ; then
-  . $CHARM_DIR/swift-storage-node-common
+if [[ -e $HOOKS_DIR/swift-storage-node-common ]] ; then
+  . $HOOKS_DIR/swift-storage-node-common
 else
-  echo "ERROR: Could not load swift-storage-node-common from $CHARM_DIR"
+  echo "ERROR: Could not load swift-storage-node-common from $HOOKS_DIR"
 fi
 
 function config_changed {
