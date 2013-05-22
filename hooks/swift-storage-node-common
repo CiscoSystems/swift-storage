@@ -129,3 +129,22 @@ function setup_storage {
   done
   chown -R swift:swift /srv/node
 }
+
+function do_openstack_upgrade {
+  # update openstack components to those provided by a new installation source
+  # it is assumed the calling hook has confirmed that the upgrade is sane.
+  local rel="$1"
+  shift
+  local packages=$@
+
+  # Backup the config directory.
+  local stamp=$(date +"%Y%m%d%M%S")
+  tar -pcf /var/lib/juju/$CHARM-backup-$stamp.tar $CONF_DIR
+
+  configure_install_source "$rel"
+  apt-get update
+  DEBIAN_FRONTEND=noninteractive apt-get \
+     --option Dpkg::Options::=--force-confnew -y \
+     install --no-install-recommends $packages
+  swift-init all restart || true
+}
