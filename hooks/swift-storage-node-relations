@@ -12,7 +12,17 @@ else
 fi
 
 function config_changed {
-  
+  # perform openstack upgrade if openstack-origin has been bumped.
+  local install_src=$(config-get openstack-origin)
+  local cur=$(get_os_codename_package "glance-common")
+  local available=$(get_os_codename_install_source "$install_src")
+  if [[ "$available" != "unknown" ]] ; then
+    if dpkg --compare-versions $(get_os_version_codename "$cur") lt \
+                               $(get_os_version_codename "$available") ; then
+      juju-log "$CHARM: Upgrading OpenStack release: $cur -> $available."
+      do_openstack_upgrade "$install_src" $PACKAGES
+    fi
+  fi
   declare -a env_vars=()
   for i in account container object ; do
     port=$(config-get ${i}-server-port)
@@ -29,7 +39,7 @@ function config_changed {
 
   # Save our scriptrc env variables for health checks
   save_script_rc ${env_vars[@]}
-} 
+}
 
 function install_hook {
   apt-get -y --force-yes install python-software-properties || exit 1
@@ -81,19 +91,6 @@ function storage_changed {
   set_swift_hash $swift_hash
   chown swift -R /etc/swift
   swift-init all start || true
-}
-
-function config_changed {
-  local install_src=$(config-get openstack-origin)
-  local cur=$(get_os_codename_package "glance-common")
-  local available=$(get_os_codename_install_source "$install_src")
-  if [[ "$available" != "unknown" ]] ; then
-    if dpkg --compare-versions $(get_os_version_codename "$cur") lt \
-                               $(get_os_version_codename "$available") ; then
-      juju-log "$CHARM: Upgrading OpenStack release: $cur -> $available."
-      do_openstack_upgrade "$install_src" $PACKAGES
-    fi
-  fi
 }
 
 case $ARG0 in
