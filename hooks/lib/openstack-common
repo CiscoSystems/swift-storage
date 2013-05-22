@@ -190,15 +190,26 @@ get_os_codename_install_source() {
 }
 
 get_os_codename_package() {
-  local pkg_vers=$(dpkg -l | grep "$1" | awk '{ print $3 }') || echo "none"
+  local pkg_vers=$(dpkg -l | grep " $1 " | awk '{ print $3 }') || echo "none"
   pkg_vers=$(echo $pkg_vers | cut -d: -f2) # epochs
-  case "${pkg_vers:0:6}" in
-    "2011.2") echo "diablo" ;;
-    "2012.1") echo "essex" ;;
-    "2012.2") echo "folsom" ;;
-    "2013.1") echo "grizzly" ;;
-    "2013.2") echo "havana" ;;
-  esac
+  if echo "$1" | grep -q swift ; then
+    case "${pkg_vers:0:5}" in
+      "1.4.3") echo "diablo" ;;
+      "1.4.8") echo "essex" ;;
+      "1.7.4") echo "folsom" ;;
+      "1.7.6") echo "grizzly" ;;
+      "1.7.7") echo "grizzly" ;;
+      "1.8.0") echo "grizzly" ;;
+    esac
+  else
+    case "${pkg_vers:0:6}" in
+      "2011.2") echo "diablo" ;;
+      "2012.1") echo "essex" ;;
+      "2012.2") echo "folsom" ;;
+      "2013.1") echo "grizzly" ;;
+      "2013.2") echo "havana" ;;
+    esac
+  fi
 }
 
 get_os_version_codename() {
