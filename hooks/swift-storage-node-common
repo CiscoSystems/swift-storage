@@ -4,6 +4,8 @@ set -ue
 CHARM="swift-storage"
 HOOKS_DIR="$CHARM_DIR/hooks"
 
+CONF_DIR="/etc/swift"
+
 if [[ -e "$HOOKS_DIR/lib/openstack-common" ]] ; then
   . $HOOKS_DIR/lib/openstack-common
 else
