@@ -14,7 +14,7 @@ fi
 function config_changed {
   # perform openstack upgrade if openstack-origin has been bumped.
   local install_src=$(config-get openstack-origin)
-  local cur=$(get_os_codename_package "glance-common")
+  local cur=$(get_os_codename_package "python-swift")
   local available=$(get_os_codename_install_source "$install_src")
   if [[ "$available" != "unknown" ]] ; then
     if dpkg --compare-versions $(get_os_version_codename "$cur") lt \
