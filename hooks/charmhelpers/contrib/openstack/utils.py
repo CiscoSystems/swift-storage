@@ -7,11 +7,13 @@ from collections import OrderedDict
 import apt_pkg as apt
 import subprocess
 import os
+import socket
 import sys
 
 from charmhelpers.core.hookenv import (
     config,
     log as juju_log,
+    unit_get,
 )
 
 from charmhelpers.core.host import (
@@ -269,3 +271,23 @@ def openstack_upgrade_available(package):
     available_vers = get_os_version_install_source(src)
     apt.init()
     return apt.version_compare(available_vers, cur_vers) == 1
+
+
+def get_host_ip(hostname=None):
+    hostname = hostname or unit_get('private-address')
+    try:
+        import dns.resolver
+    except ImportError:
+        apt_install('python-dnspython')
+        import dns.resolver
+
+    try:
+        # Test to see if already an IPv4 address
+        socket.inet_aton(hostname)
+        return hostname
+    except socket.error:
+        # This may throw an NXDOMAIN exception; in which case
+        # things are badly broken so just let it kill the hook
+        answers = dns.resolver.query(hostname, 'A')
+        if answers:
+            return answers[0].address

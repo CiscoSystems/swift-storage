@@ -1,12 +1,24 @@
+import re
 import os
 
 from subprocess import check_call, call
 
+# Stuff copied from cinder py charm, needs to go somewhere
+# common.
+from misc_utils import (
+    ensure_block_device,
+    clean_storage,
+)
+
+from swift_storage_context import (
+    SwiftStorageContext,
+    SwiftStorageServerContext,
+    RsyncContext,
+)
+
 from charmhelpers.core.host import (
     mkdir,
     mount,
-    umount as ensure_block_device,
-    umount as clean_storage,
 )
 
 from charmhelpers.core.hookenv import (
@@ -15,10 +27,49 @@ from charmhelpers.core.hookenv import (
     ERROR,
 )
 
+from charmhelpers.contrib.storage.linux.utils import (
+    is_block_device,
+)
+
+from charmhelpers.contrib.openstack.utils import (
+    get_host_ip,
+    get_os_codename_package,
+    save_script_rc as _save_script_rc,
+)
+
+from charmhelpers.contrib.openstack import (
+    templating,
+)
+
 PACKAGES = [
-    'swift', 'swift-account', 'swift-container',
-    'swift-object' 'xfsprogs' 'gdisk'
+    'swift', 'swift-account', 'swift-container', 'swift-object',
+    'xfsprogs', 'gdisk', 'lvm2', 'python-jinja2',
 ]
+
+TEMPLATES = 'templates/'
+
+ACCOUNT_SVCS = [
+    'swift-account', 'swift-account-auditor',
+    'swift-account-reaper', 'swift-account-replicator'
+]
+
+CONTAINER_SVCS = [
+    'swift-container', 'swift-container-auditor',
+    'swift-container-updater', 'swift-container-replicator'
+]
+
+OBJECT_SVCS = [
+    'swift-object', 'swift-object-auditor',
+    'swift-object-updater', 'swift-object-replicator'
+]
+
+RESTART_MAP = {
+    '/etc/rsyncd.conf': ['rsync'],
+    '/etc/swift/account-server.conf': ACCOUNT_SVCS,
+    '/etc/swift/container-server.conf': CONTAINER_SVCS,
+    '/etc/swift/object-server.conf': OBJECT_SVCS,
+    '/etc/swift/swift.conf': ACCOUNT_SVCS + CONTAINER_SVCS + OBJECT_SVCS
+}
 
 
 def ensure_swift_directories():
@@ -36,7 +87,17 @@ def ensure_swift_directories():
 
 
 def register_configs():
-    return None
+    release = get_os_codename_package('python-swift', fatal=False) or 'essex'
+    configs = templating.OSConfigRenderer(templates_dir=TEMPLATES,
+                                          openstack_release=release)
+    configs.register('/etc/swift/swift.conf',
+                     [SwiftStorageContext()])
+    configs.register('/etc/rsyncd.conf',
+                     [RsyncContext()])
+    for server in ['account', 'object', 'container']:
+        configs.register('/etc/swift/%s-server.conf' % server,
+                         [SwiftStorageServerContext()]),
+    return configs
 
 
 def swift_init(target, action, fatal=False):
@@ -55,7 +116,18 @@ def do_openstack_upgrade(configs):
 
 
 def find_block_devices():
-    pass
+    found = []
+    incl = ['sd[a-z]', 'vd[a-z]', 'cciss\/c[0-9]d[0-9]']
+    blacklist = ['sda', 'vda', 'cciss/c0d0']
+
+    with open('/proc/partitions') as proc:
+        partitions = [p.split() for p in proc.readlines()[2:]]
+    for partition in [p[3] for p in partitions if p]:
+        for inc in incl:
+            _re = re.compile(r'^(%s)$' % inc)
+            if _re.match(partition) and partition not in blacklist:
+                found.append(os.path.join('/dev', partition))
+    return [f for f in found if is_block_device(f)]
 
 
 def determine_block_devices():
@@ -89,7 +161,8 @@ def setup_storage():
         _mp = os.path.join('/srv', 'node', _dev)
         mkdir(_mp, owner='swift', group='swift')
         mount(dev, '/srv/node/%s' % _dev, persist=True)
-        # TODO: chown again post-mount?
+    check_call(['chown', '-R', 'swift:swift', '/srv/node/'])
+    check_call(['chmod', '-R', '0750', '/srv/node/'])
 
 
 def fetch_swift_rings(rings_url):
@@ -100,3 +173,18 @@ def fetch_swift_rings(rings_url):
         log('Fetching %s.' % url)
         cmd = ['wget', url, '-O', '/etc/swift/%s.ring.gz' % server]
         check_call(cmd)
+
+
+def save_script_rc():
+    env_vars = {}
+    ip = get_host_ip()
+    for server in ['account', 'container', 'object']:
+        port = config('%s-server-port' % server)
+        url = 'http://%s:%s/recon/diskusage|"mounted":true' % (ip, port)
+        svc = server.upper()
+        env_vars.update({
+            'OPENSTACK_PORT_%s' % svc: port,
+            'OPENSTACK_SWIFT_SERVICE_%s' % svc: '%s-server' % server,
+            'OPENSTACK_URL_%s' % svc: url,
+        })
+    _save_script_rc(**env_vars)
