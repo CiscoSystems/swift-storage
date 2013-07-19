@@ -1,4 +1,4 @@
-from mock import MagicMock, patch
+from mock import MagicMock
 
 from unit_tests.test_utils import CharmTestCase, patch_open
 
