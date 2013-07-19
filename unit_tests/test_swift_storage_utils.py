@@ -1,6 +1,5 @@
 from mock import call, patch, MagicMock
-from contextlib import contextmanager
-from unit_tests.test_utils import CharmTestCase
+from unit_tests.test_utils import CharmTestCase, patch_open
 
 
 import hooks.swift_storage_utils as swift_utils
@@ -57,24 +56,6 @@ SCRIPT_RC_ENV = {
     'OPENSTACK_URL_OBJECT':
     'http://10.0.0.1:6000/recon/diskusage|"mounted":true'
 }
-
-
-@contextmanager
-def patch_open():
-    '''Patch open() to allow mocking both open() itself and the file that is
-    yielded.
-
-    Yields the mock for "open" and "file", respectively.'''
-    mock_open = MagicMock(spec=open)
-    mock_file = MagicMock(spec=file)
-
-    @contextmanager
-    def stub_open(*args, **kwargs):
-        mock_open(*args, **kwargs)
-        yield mock_file
-
-    with patch('__builtin__.open', stub_open):
-        yield mock_open, mock_file
 
 
 class SwiftStorageUtilsTests(CharmTestCase):
@@ -185,3 +166,35 @@ class SwiftStorageUtilsTests(CharmTestCase):
         self.get_host_ip.return_value = '10.0.0.1'
         swift_utils.save_script_rc()
         self._save_script_rc.assert_called_with(**SCRIPT_RC_ENV)
+
+    @patch('hooks.charmhelpers.contrib.openstack.templating.OSConfigRenderer')
+    def test_register_configs_pre_install(self, renderer):
+        self.get_os_codename_package.return_value = None
+        swift_utils.register_configs()
+        renderer.assert_called_with(templates_dir=swift_utils.TEMPLATES,
+                                    openstack_release='essex')
+
+    @patch.object(swift_utils, 'SwiftStorageContext')
+    @patch.object(swift_utils, 'RsyncContext')
+    @patch.object(swift_utils, 'SwiftStorageServerContext')
+    @patch('hooks.charmhelpers.contrib.openstack.templating.OSConfigRenderer')
+    def test_register_configs_post_install(self, renderer,
+                                           swift, rsync, server):
+        swift.return_value = 'swift_context'
+        rsync.return_value = 'rsync_context'
+        server.return_value = 'swift_server_context'
+        self.get_os_codename_package.return_value = 'grizzly'
+        configs = MagicMock()
+        configs.register = MagicMock()
+        renderer.return_value = configs
+        swift_utils.register_configs()
+        renderer.assert_called_with(templates_dir=swift_utils.TEMPLATES,
+                                    openstack_release='grizzly')
+        ex = [
+            call('/etc/swift/swift.conf', ['swift_server_context']),
+            call('/etc/rsyncd.conf', ['rsync_context']),
+            call('/etc/swift/account-server.conf', ['swift_context']),
+            call('/etc/swift/object-server.conf', ['swift_context']),
+            call('/etc/swift/container-server.conf', ['swift_context'])
+        ]
+        self.assertEquals(ex, configs.register.call_args_list)

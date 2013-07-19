@@ -16,7 +16,7 @@ from swift_storage_utils import (
 )
 
 from charmhelpers.core.hookenv import (
-    Hooks,
+    Hooks, UnregisteredHookError,
     config,
     log,
     relation_get,
@@ -81,5 +81,13 @@ def swift_storage_relation_changed():
     CONFIGS.write('/etc/swift/swift.conf')
     fetch_swift_rings(rings_url)
 
-if '/usr/bin/nosetests' not in sys.argv:
-    hooks.execute(sys.argv)
+
+def main():
+    try:
+        hooks.execute(sys.argv)
+    except UnregisteredHookError as e:
+        log('Unknown hook {} - skipping.'.format(e))
+
+
+if __name__ == '__main__':
+    main()

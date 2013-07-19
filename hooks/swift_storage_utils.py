@@ -121,6 +121,7 @@ def find_block_devices():
     blacklist = ['sda', 'vda', 'cciss/c0d0']
 
     with open('/proc/partitions') as proc:
+        print proc
         partitions = [p.split() for p in proc.readlines()[2:]]
     for partition in [p[3] for p in partitions if p]:
         for inc in incl:

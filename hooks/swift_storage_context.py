@@ -42,7 +42,8 @@ class RsyncContext(OSContextGenerator):
     interfaces = []
 
     def enable_rsyncd(self):
-        default = open('/etc/default/rsync').read()
+        with open('/etc/default/rsync') as _in:
+            default = _in.read()
         _m = re.compile('^RSYNC_ENABLE=(.*)$', re.MULTILINE)
         if not re.search(_m, default):
             with open('/etc/default/rsync', 'a+') as out:

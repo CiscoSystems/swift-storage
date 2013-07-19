@@ -100,3 +100,16 @@ class SwiftStorageRelationsTests(CharmTestCase):
         self.fetch_swift_rings.assert_called_with(
             'http://swift-proxy.com/rings/'
         )
+
+    @patch('sys.argv')
+    @patch.object(relations, 'install')
+    def test_main_hook_exists(self, _install, _argv):
+        _argv = ['hooks/install']
+        relations.main()
+        _install.assert_called()
+
+    @patch('sys.argv')
+    def test_main_hook_missing(self, _argv):
+        _argv = ['hooks/start']
+        relations.main()
+        self.log.assert_called()
