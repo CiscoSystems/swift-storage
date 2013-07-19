@@ -39,13 +39,11 @@ hooks = Hooks()
 CONFIGS = register_configs()
 
 
-@hooks.hook('install')
-@restart_on_change(RESTART_MAP)
+@hooks.hook()
 def install():
     configure_installation_source(config('openstack-origin'))
     apt_update()
     apt_install(PACKAGES, fatal=True)
-    CONFIGS.write('/etc/rsyncd.conf')
     setup_storage()
     ensure_swift_directories()
 
