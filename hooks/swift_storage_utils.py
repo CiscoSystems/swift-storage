@@ -17,8 +17,11 @@ from swift_storage_context import (
 )
 
 from charmhelpers.core.host import (
+    apt_install,
+    apt_update,
     mkdir,
     mount,
+    service_restart,
 )
 
 from charmhelpers.core.hookenv import (
@@ -32,7 +35,9 @@ from charmhelpers.contrib.storage.linux.utils import (
 )
 
 from charmhelpers.contrib.openstack.utils import (
+    configure_installation_source,
     get_host_ip,
+    get_os_codename_install_source,
     get_os_codename_package,
     save_script_rc as _save_script_rc,
 )
@@ -112,7 +117,21 @@ def swift_init(target, action, fatal=False):
 
 
 def do_openstack_upgrade(configs):
-    pass
+    new_src = config('openstack-origin')
+    new_os_rel = get_os_codename_install_source(new_src)
+
+    log('Performing OpenStack upgrade to %s.' % (new_os_rel))
+    configure_installation_source(new_src)
+    dpkg_opts = [
+        '--option', 'Dpkg::Options::=--force-confnew',
+        '--option', 'Dpkg::Options::=--force-confdef',
+    ]
+    apt_update()
+    apt_install(packages=PACKAGES, options=dpkg_opts, fatal=True)
+    configs.set_release(openstack_release=new_os_rel)
+    configs.write_all()
+    [service_restart(svc) for svc in
+     (ACCOUNT_SVCS + CONTAINER_SVCS + OBJECT_SVCS)]
 
 
 def find_block_devices():

@@ -6,8 +6,11 @@ import hooks.swift_storage_utils as swift_utils
 
 
 TO_PATCH = [
+    'apt_update',
+    'apt_install',
     'log',
     'config',
+    'configure_installation_source',
     'mkdir',
     'mount',
     'check_call',
@@ -16,7 +19,9 @@ TO_PATCH = [
     'clean_storage',
     'is_block_device',
     'get_os_codename_package',
+    'get_os_codename_install_source',
     'get_host_ip',
+    'service_restart',
     '_save_script_rc',
 ]
 
@@ -198,3 +203,25 @@ class SwiftStorageUtilsTests(CharmTestCase):
             call('/etc/swift/container-server.conf', ['swift_context'])
         ]
         self.assertEquals(ex, configs.register.call_args_list)
+
+    def test_do_upgrade(self):
+        self.test_config.set('openstack-origin', 'cloud:precise-grizzly')
+        self.get_os_codename_install_source.return_value = 'grizzly'
+        swift_utils.do_openstack_upgrade(MagicMock())
+        self.configure_installation_source.assert_called_with(
+            'cloud:precise-grizzly'
+        )
+        dpkg_opts = [
+            '--option', 'Dpkg::Options::=--force-confnew',
+            '--option', 'Dpkg::Options::=--force-confdef',
+        ]
+        self.assertTrue(self.apt_update.called)
+        self.apt_install.assert_called_with(
+            packages=swift_utils.PACKAGES,
+            options=dpkg_opts,
+            fatal=True
+        )
+        services = (swift_utils.ACCOUNT_SVCS + swift_utils.CONTAINER_SVCS +
+                    swift_utils.OBJECT_SVCS)
+        for service in services:
+            self.assertIn(call(service), self.service_restart.call_args_list)

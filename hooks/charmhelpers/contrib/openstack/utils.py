@@ -62,6 +62,7 @@ def error_out(msg):
 
 def get_os_codename_install_source(src):
     '''Derive OpenStack release codename from a given installation source.'''
+    import ipdb; ipdb.set_trace() ############################## Breakpoint ##############################
     ubuntu_rel = lsb_release()['DISTRIB_CODENAME']
     rel = ''
     if src == 'distro':
