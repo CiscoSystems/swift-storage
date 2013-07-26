@@ -47,7 +47,7 @@ class SwiftStorageContextTests(CharmTestCase):
         self.assertEquals({'local_ip': '10.0.0.5'}, ctxt())
         self.assertTrue(ctxt.enable_rsyncd.called)
 
-    def test_rsync_enale_rsync(self):
+    def test_rsync_enable_rsync(self):
         with patch_open() as (_open, _file):
             ctxt = swift_context.RsyncContext()
             _file.read.return_value = 'RSYNC_ENABLE=false'
