@@ -20,7 +20,7 @@ TO_PATCH = [
     'is_block_device',
     'get_os_codename_package',
     'get_os_codename_install_source',
-    'get_host_ip',
+    'unit_private_ip',
     'service_restart',
     '_save_script_rc',
 ]
@@ -168,7 +168,7 @@ class SwiftStorageUtilsTests(CharmTestCase):
         self.assertEquals(ex, result)
 
     def test_save_script_rc(self):
-        self.get_host_ip.return_value = '10.0.0.1'
+        self.unit_private_ip.return_value = '10.0.0.1'
         swift_utils.save_script_rc()
         self._save_script_rc.assert_called_with(**SCRIPT_RC_ENV)
 

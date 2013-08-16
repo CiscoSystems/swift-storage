@@ -27,6 +27,7 @@ from charmhelpers.core.host import (
 from charmhelpers.core.hookenv import (
     config,
     log,
+    unit_private_ip,
     ERROR,
 )
 
@@ -36,7 +37,6 @@ from charmhelpers.contrib.storage.linux.utils import (
 
 from charmhelpers.contrib.openstack.utils import (
     configure_installation_source,
-    get_host_ip,
     get_os_codename_install_source,
     get_os_codename_package,
     save_script_rc as _save_script_rc,
@@ -197,7 +197,7 @@ def fetch_swift_rings(rings_url):
 
 def save_script_rc():
     env_vars = {}
-    ip = get_host_ip()
+    ip = unit_private_ip()
     for server in ['account', 'container', 'object']:
         port = config('%s-server-port' % server)
         url = 'http://%s:%s/recon/diskusage|"mounted":true' % (ip, port)

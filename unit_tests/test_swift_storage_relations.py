@@ -104,12 +104,10 @@ class SwiftStorageRelationsTests(CharmTestCase):
     @patch('sys.argv')
     @patch.object(hooks, 'install')
     def test_main_hook_exists(self, _install, _argv):
-        _argv = ['hooks/install']
         hooks.main()
         _install.assert_called()
 
     @patch('sys.argv')
     def test_main_hook_missing(self, _argv):
-        _argv = ['hooks/start']
         hooks.main()
         self.log.assert_called()

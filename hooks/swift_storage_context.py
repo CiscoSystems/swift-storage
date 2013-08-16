@@ -6,10 +6,7 @@ from charmhelpers.core.hookenv import (
     related_units,
     relation_get,
     relation_ids,
-)
-
-from charmhelpers.contrib.openstack.utils import (
-    get_host_ip,
+    unit_private_ip,
 )
 
 from charmhelpers.contrib.openstack.context import (
@@ -53,7 +50,7 @@ class RsyncContext(OSContextGenerator):
                 out.write(_m.sub('RSYNC_ENABLE=true', default))
 
     def __call__(self):
-        local_ip = get_host_ip()
+        local_ip = unit_private_ip()
         self.enable_rsyncd()
         return {
             'local_ip': local_ip
@@ -65,7 +62,7 @@ class SwiftStorageServerContext(OSContextGenerator):
 
     def __call__(self):
         ctxt = {
-            'local_ip': get_host_ip(),
+            'local_ip': unit_private_ip(),
             'account_server_port': config('account-server-port'),
             'container_server_port': config('container-server-port'),
             'object_server_port': config('object-server-port'),

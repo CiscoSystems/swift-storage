@@ -7,18 +7,17 @@ from collections import OrderedDict
 import apt_pkg as apt
 import subprocess
 import os
-import socket
 import sys
 
 from charmhelpers.core.hookenv import (
     config,
     log as juju_log,
-    unit_get,
+    charm_dir,
 )
 
 from charmhelpers.core.host import (
     lsb_release,
-    apt_install
+    apt_install,
 )
 
 CLOUD_ARCHIVE_URL = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
@@ -164,6 +163,25 @@ def get_os_version_package(pkg, fatal=True):
     #error_out(e)
 
 
+os_rel = None
+
+
+def os_release(package, base='essex'):
+    '''
+    Returns OpenStack release codename from a cached global.
+    If the codename can not be determined from either an installed package or
+    the installation source, the earliest release supported by the charm should
+    be returned.
+    '''
+    global os_rel
+    if os_rel:
+        return os_rel
+    os_rel = (get_os_codename_package(package, fatal=False) or
+              get_os_codename_install_source(config('openstack-origin')) or
+              base)
+    return os_rel
+
+
 def import_key(keyid):
     cmd = "apt-key adv --keyserver keyserver.ubuntu.com " \
           "--recv-keys %s" % keyid
@@ -245,8 +263,9 @@ def save_script_rc(script_path="scripts/scriptrc", **env_vars):
     updated config information necessary to perform health checks or
     service changes.
     """
-    unit_name = os.getenv('JUJU_UNIT_NAME').replace('/', '-')
-    juju_rc_path = "/var/lib/juju/units/%s/charm/%s" % (unit_name, script_path)
+    juju_rc_path = "%s/%s" % (charm_dir(), script_path)
+    if not os.path.exists(os.path.dirname(juju_rc_path)):
+        os.mkdir(os.path.dirname(juju_rc_path))
     with open(juju_rc_path, 'wb') as rc_script:
         rc_script.write(
             "#!/bin/bash\n")
@@ -271,23 +290,3 @@ def openstack_upgrade_available(package):
     available_vers = get_os_version_install_source(src)
     apt.init()
     return apt.version_compare(available_vers, cur_vers) == 1
-
-
-def get_host_ip(hostname=None):
-    hostname = hostname or unit_get('private-address')
-    try:
-        import dns.resolver
-    except ImportError:
-        apt_install('python-dnspython')
-        import dns.resolver
-
-    try:
-        # Test to see if already an IPv4 address
-        socket.inet_aton(hostname)
-        return hostname
-    except socket.error:
-        # This may throw an NXDOMAIN exception; in which case
-        # things are badly broken so just let it kill the hook
-        answers = dns.resolver.query(hostname, 'A')
-        if answers:
-            return answers[0].address
