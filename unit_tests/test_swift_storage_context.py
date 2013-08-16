@@ -12,7 +12,7 @@ TO_PATCH = [
     'related_units',
     'relation_get',
     'relation_ids',
-    'get_host_ip',
+    'unit_private_ip',
 ]
 
 
@@ -40,7 +40,7 @@ class SwiftStorageContextTests(CharmTestCase):
         self.assertEquals(ctxt(), {'swift_hash': 'fooooo'})
 
     def test_rsync_context(self):
-        self.get_host_ip.return_value = '10.0.0.5'
+        self.unit_private_ip.return_value = '10.0.0.5'
         ctxt = swift_context.RsyncContext()
         ctxt.enable_rsyncd = MagicMock()
         ctxt.enable_rsyncd.return_value = True
@@ -58,7 +58,7 @@ class SwiftStorageContextTests(CharmTestCase):
             _file.write.assert_called_with('RSYNC_ENABLE=true\n')
 
     def test_swift_storage_server_context(self):
-        self.get_host_ip.return_value = '10.0.0.5'
+        self.unit_private_ip.return_value = '10.0.0.5'
         self.test_config.set('account-server-port', '500')
         self.test_config.set('object-server-port', '501')
         self.test_config.set('container-server-port', '502')
