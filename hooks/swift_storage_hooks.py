@@ -23,12 +23,8 @@ from charmhelpers.core.hookenv import (
     relation_set,
 )
 
-from charmhelpers.core.host import (
-    apt_install,
-    apt_update,
-    restart_on_change,
-)
-
+from charmhelpers.fetch import apt_install, apt_update
+from charmhelpers.core.host import restart_on_change
 
 from charmhelpers.contrib.openstack.utils import (
     configure_installation_source,

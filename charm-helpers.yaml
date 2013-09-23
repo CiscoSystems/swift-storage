@@ -4,6 +4,7 @@ include:
     - core
     - contrib.openstack|inc=*
     - contrib.storage
+    - fetch
     - contrib.hahelpers:
         - apache
         - ceph

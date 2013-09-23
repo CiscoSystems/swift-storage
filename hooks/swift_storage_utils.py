@@ -16,9 +16,9 @@ from swift_storage_context import (
     RsyncContext,
 )
 
+from charmhelpers.fetch import apt_install, apt_update
+
 from charmhelpers.core.host import (
-    apt_install,
-    apt_update,
     mkdir,
     mount,
     service_restart,
