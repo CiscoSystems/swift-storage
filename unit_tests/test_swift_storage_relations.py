@@ -1,17 +1,17 @@
 from mock import patch, MagicMock
 
-from unit_tests.test_utils import CharmTestCase
+from test_utils import CharmTestCase
 
-import hooks.swift_storage_utils as utils
+import swift_storage_utils as utils
 
 _reg = utils.register_configs
 utils.register_configs = MagicMock()
 
-import hooks.swift_storage_hooks as hooks
+import swift_storage_hooks as hooks
 
 utils.register_configs = _reg
 
-from hooks.swift_storage_utils import PACKAGES
+from swift_storage_utils import PACKAGES
 
 TO_PATCH = [
     'CONFIGS',
@@ -35,6 +35,7 @@ TO_PATCH = [
     'save_script_rc',
     'setup_storage',
     'register_configs',
+    'execd_preinstall'
 ]
 
 
@@ -55,6 +56,7 @@ class SwiftStorageRelationsTests(CharmTestCase):
         self.apt_install.assert_called_with(PACKAGES, fatal=True)
 
         self.setup_storage.assert_called()
+        self.execd_preinstall.assert_called()
 
     def test_config_changed_no_upgrade_available(self):
         self.openstack_upgrade_available.return_value = False

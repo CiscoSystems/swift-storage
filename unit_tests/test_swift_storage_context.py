@@ -1,9 +1,7 @@
 from mock import MagicMock
+from test_utils import CharmTestCase, patch_open
 
-from unit_tests.test_utils import CharmTestCase, patch_open
-
-
-import hooks.swift_storage_context as swift_context
+import swift_storage_context as swift_context
 
 
 TO_PATCH = [

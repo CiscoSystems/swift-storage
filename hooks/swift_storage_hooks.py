@@ -25,6 +25,7 @@ from charmhelpers.core.hookenv import (
 
 from charmhelpers.fetch import apt_install, apt_update
 from charmhelpers.core.host import restart_on_change
+from charmhelpers.payload.execd import execd_preinstall
 
 from charmhelpers.contrib.openstack.utils import (
     configure_installation_source,
@@ -37,6 +38,7 @@ CONFIGS = register_configs()
 
 @hooks.hook()
 def install():
+    execd_preinstall()
     configure_installation_source(config('openstack-origin'))
     apt_update()
     apt_install(PACKAGES, fatal=True)

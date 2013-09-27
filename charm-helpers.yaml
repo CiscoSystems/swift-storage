@@ -7,5 +7,5 @@ include:
     - fetch
     - contrib.hahelpers:
         - apache
-        - ceph
         - cluster
+    - payload.execd

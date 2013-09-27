@@ -1,8 +1,7 @@
 from mock import call, patch, MagicMock
-from unit_tests.test_utils import CharmTestCase, patch_open
+from test_utils import CharmTestCase, patch_open
 
-
-import hooks.swift_storage_utils as swift_utils
+import swift_storage_utils as swift_utils
 
 
 TO_PATCH = [
@@ -172,7 +171,7 @@ class SwiftStorageUtilsTests(CharmTestCase):
         swift_utils.save_script_rc()
         self._save_script_rc.assert_called_with(**SCRIPT_RC_ENV)
 
-    @patch('hooks.charmhelpers.contrib.openstack.templating.OSConfigRenderer')
+    @patch('charmhelpers.contrib.openstack.templating.OSConfigRenderer')
     def test_register_configs_pre_install(self, renderer):
         self.get_os_codename_package.return_value = None
         swift_utils.register_configs()
@@ -182,7 +181,7 @@ class SwiftStorageUtilsTests(CharmTestCase):
     @patch.object(swift_utils, 'SwiftStorageContext')
     @patch.object(swift_utils, 'RsyncContext')
     @patch.object(swift_utils, 'SwiftStorageServerContext')
-    @patch('hooks.charmhelpers.contrib.openstack.templating.OSConfigRenderer')
+    @patch('charmhelpers.contrib.openstack.templating.OSConfigRenderer')
     def test_register_configs_post_install(self, renderer,
                                            swift, rsync, server):
         swift.return_value = 'swift_context'
